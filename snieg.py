@@ -146,18 +146,12 @@ def save_in_dir(d):
 
 def get_save_dirs(save_dir, typ="", backup=False):
     unzip(save_dir)
+
     found_dirs = [
-        (os.path.join(save_dir, d), d)
-        for d in os.listdir(save_dir)
-        if os.path.isdir(os.path.join(save_dir, d))
-        and (save_in_dir(os.path.join(save_dir, d)) or len(d) >= 32)
-        and not "backup" in d
+        [root, os.path.split(root)[1]]
+        for root, _, f in os.walk(save_dir)
+        if "backup" not in root and save_in_dir(root)
     ]
-    found_dirs = list(
-        sorted(
-            found_dirs, key=lambda f: pathlib.Path(f[0]).stat().st_mtime, reverse=True
-        )
-    )
 
     if typ == "external":
         name = "new"
@@ -461,24 +455,38 @@ def warn():
 
 
 def get_local_save_path():
-    local_dp = f"C:\\Users\\{os.getlogin()}\\Documents\\My Games\\SnowRunner"
+    local_dp = (
+        f"C:\\Users\\{os.getlogin()}\\Documents\\My Games\\SnowRunner\\base\\storage"
+    )
     if not os.path.isdir(local_dp):
         if not CONFIG["custom_path"]:
             print(red("Save directory not found, checking OneDrive."))
-            local_dp = (
-                f"C:\\Users\\{os.getlogin()}\\OneDrive\\Documents\\My Games\\SnowRunner"
-            )
+            local_dp = f"C:\\Users\\{os.getlogin()}\\OneDrive\\Documents\\My Games\\SnowRunner\\base\\storage"
             if not os.path.isdir(local_dp):
                 print(red("OneDrive directory not found."))
-                local_dp = input(
-                    "Paste your snowrunner save directory path here (SnowRunner folder in Documents\\My Games, to paste copy and press right mouse button).\n> "
-                )
-                CONFIG["custom_path"] = local_dp
-                save_config()
+                # look for steam directory
+                found_files = []
+                for root, _, f in os.walk(r"C:\Program Files (x86)\Steam\userdata"):
+                    if "CompleteSave.cfg" in f and "Backup" not in root:
+                        found_files.append(root)
+                if len(found_files) == 1:
+                    local_dp = os.path.split(found_files[0])[0]
+                    print(green("Steam directory found"))
+                else:
+                    print(
+                        f"More than one dicetory found or zero finding: {found_files}"
+                    )
+
+                    local_dp = input(
+                        "Paste your snowrunner save (storage folder) directory path here (SnowRunner folder in Documents\\My Games, to paste copy and press right mouse button).\n> "
+                    )
+            CONFIG["custom_path"] = local_dp
+            save_config()
         else:
+            local_dp = CONFIG["custom_path"]
             print(green("Loaded custom save directory"))
 
-    return os.path.join(local_dp, "base", "storage")
+    return os.path.join(local_dp)
 
 
 def get_fname_from_slotn(n):
@@ -633,6 +641,7 @@ def load_save(mirror=False):
                 style=style.NORMAL,
             )
         )
+    fix_saves()
 
     print(
         yellow(
@@ -1162,21 +1171,13 @@ def fix_saves():
     print(files)
     for f in files:
         fp = os.path.join(local_dir[0], f)
-        with open(fp, "r") as savefile:
-            text = savefile.read()
-            end_symbol = text[-1]
-            local = text
-            if end_symbol != "}":
-                local = local[:-1]
-            save = json.loads(local)
-
-        save[f.split(".")[0]]["SslValue"]["saveId"] = get_next_id()
-
-        with open(fp, "w") as f:
-            f.write(json.dumps(save))
-
-        save_config()
-
+        with open(fp, "r") as f:
+            text = f.read()
+            print(f"{fp} readed.")
+        if text[-1] != '\0':
+            with open(fp, "a") as f:
+                f.write('\0')
+                print(f"Null sign to {fp} added.")
 
 def set_colors():
     toggle_colorize(CONFIG["colors"])
@@ -1190,7 +1191,7 @@ def first_run():
     d = dict(DEFAULT_CONFIG)
     d["colors"] = CONFIG["colors"]
     CONFIG = d
-    CONFIG["id_counter"] = get_last_id(local_dir[0])
+    CONFIG["id_counter"] = get_last_id(local_dir)
     set_colors()
     CONFIG["first_run"] = False
     save_config()

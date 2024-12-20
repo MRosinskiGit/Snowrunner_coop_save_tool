@@ -224,6 +224,8 @@ def file_to_persist(fname, save_save=False):
 
 
 def get_last_id(target_dir):
+    if isinstance(target_dir, list):
+        target_dir=target_dir[0]
     files = [
         fname
         for fname in os.listdir(target_dir)
@@ -467,7 +469,7 @@ def get_local_save_path():
                 # look for steam directory
                 found_files = []
                 for root, _, f in os.walk(r"C:\Program Files (x86)\Steam\userdata"):
-                    if "CompleteSave.cfg" in f and "Backup" not in root:
+                    if "CompleteSave.cfg" in f and root not in ["backups","Backup"]:
                         found_files.append(root)
                 if len(found_files) == 1:
                     local_dp = os.path.split(found_files[0])[0]

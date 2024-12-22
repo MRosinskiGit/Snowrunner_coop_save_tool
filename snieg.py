@@ -36,15 +36,6 @@ CONFIG = None
 config_path = os.path.join(application_path, "data", "config.json")
 
 
-def load_config():
-    global CONFIG
-    with open(config_path, "r", encoding="utf-8") as f:
-        CONFIG = json.load(f)
-
-
-def save_config():
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(CONFIG, f)
 
 
 def swap_keys(external, local, external_id, local_id, _id=404, mirror=False):
@@ -454,41 +445,6 @@ def warn():
     )
 
     input(bg_white("Continue... (Press ENTER)", pad=True, style=style.DIM))
-
-
-def get_local_save_path():
-    local_dp = (
-        f"C:\\Users\\{os.getlogin()}\\Documents\\My Games\\SnowRunner\\base\\storage"
-    )
-    if not os.path.isdir(local_dp):
-        if not CONFIG["custom_path"]:
-            print(red("Save directory not found, checking OneDrive."))
-            local_dp = f"C:\\Users\\{os.getlogin()}\\OneDrive\\Documents\\My Games\\SnowRunner\\base\\storage"
-            if not os.path.isdir(local_dp):
-                print(red("OneDrive directory not found."))
-                # look for steam directory
-                found_files = []
-                for root, _, f in os.walk(r"C:\Program Files (x86)\Steam\userdata"):
-                    if "CompleteSave.cfg" in f and root not in ["backups","Backup"]:
-                        found_files.append(root)
-                if len(found_files) == 1:
-                    local_dp = os.path.split(found_files[0])[0]
-                    print(green("Steam directory found"))
-                else:
-                    print(
-                        f"More than one dicetory found or zero finding: {found_files}"
-                    )
-
-                    local_dp = input(
-                        "Paste your snowrunner save (storage folder) directory path here (SnowRunner folder in Documents\\My Games, to paste copy and press right mouse button).\n> "
-                    )
-            CONFIG["custom_path"] = local_dp
-            save_config()
-        else:
-            local_dp = CONFIG["custom_path"]
-            print(green("Loaded custom save directory"))
-
-    return os.path.join(local_dp)
 
 
 def get_fname_from_slotn(n):
@@ -1185,19 +1141,7 @@ def set_colors():
     toggle_colorize(CONFIG["colors"])
 
 
-def first_run():
-    global CONFIG
-    print(cyan("[INITIAL RUN]"))
-    l = get_local_save_path()
-    local_dir = get_save_dirs(l, typ="local")
-    d = dict(DEFAULT_CONFIG)
-    d["colors"] = CONFIG["colors"]
-    CONFIG = d
-    CONFIG["id_counter"] = get_last_id(local_dir)
-    set_colors()
-    CONFIG["first_run"] = False
-    save_config()
-    print(green("Config created."))
+
 
 
 def tog_colors():

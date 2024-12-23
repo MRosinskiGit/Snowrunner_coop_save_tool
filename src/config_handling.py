@@ -13,6 +13,10 @@ def load_config() -> dict:
 
     except FileNotFoundError as e:
         logger.critical(f"File in {gv.CONFIG_PATH} was not found.\n" f"Exception: {e}")
+    except PermissionError as e:
+        logger.critical(
+            f"File cannot be open due to permission denied." f"Exception: {e}"
+        )
     except json.JSONDecodeError as e:
         logger.critical(f"JSON Structure issue.\n" f"Exception: {e}")
         with open(gv.CONFIG_PATH) as f:

@@ -15,28 +15,6 @@ from datetime import datetime
 # PATHS FOR EXE FILE
 import sys
 
-if getattr(sys, "frozen", False):
-    application_path = os.path.dirname(sys.executable)
-elif __file__:
-    application_path = os.path.dirname(__file__)
-
-REALPATH = pathlib.Path(__file__).parent.absolute()
-os.chdir(REALPATH)
-
-
-# CONFIG
-DEFAULT_CONFIG = {
-    "custom_path": None,
-    "id_counter": 1,
-    "isolate_save": None,
-    "first_run": True,
-    "colors": True,
-}
-CONFIG = None
-config_path = os.path.join(application_path, "data", "config.json")
-
-
-
 
 def swap_keys(external, local, external_id, local_id, _id=404, mirror=False):
     if not mirror:
@@ -216,7 +194,7 @@ def file_to_persist(fname, save_save=False):
 
 def get_last_id(target_dir):
     if isinstance(target_dir, list):
-        target_dir=target_dir[0]
+        target_dir = target_dir[0]
     files = [
         fname
         for fname in os.listdir(target_dir)
@@ -237,47 +215,6 @@ def get_last_id(target_dir):
                 return 0
         ids.append(save[f.split(".")[0]]["SslValue"]["saveId"])
     return max(ids) if ids else 0
-
-
-# unused, probably has no effect
-# def add_common_entry(target_dir, slot):
-#     entries = []
-
-#     files = [fname for fname in os.listdir(target_dir) if os.path.isfile(os.path.join(target_dir, fname)) and 'CompleteSave' in fname]
-
-#     sslfp = os.path.join(target_dir, 'CommonSslSave.dat')
-#     with open(sslfp, 'r') as sslfile:
-#         text = sslfile.read()
-#         end_symbol = text[-1]
-#         local = text
-#         if end_symbol != '}':
-#             local = local[:-1]
-#         ssl = json.loads(local)
-
-#     ssl['CommonSslSave']["SslValue"]["saveSlotsTransaction"] = []
-#     for f in files:
-#         fp = os.path.join(target_dir, f)
-#         with open(fp, 'r') as savefile:
-#             text = savefile.read()
-#             end_symbol = text[-1]
-#             local = text
-#             if end_symbol != '}':
-#                 local = local[:-1]
-#             save = json.loads(local)
-
-#         slot = get_slot_from_fname(f)
-#         entry = {
-#             "saveId": save[f.split('.')[0]]["SslValue"]['saveId'],
-#             "slot": slot,
-#             "action": "SaveGame",
-#             "saveTime": ssl['CommonSslSave']["SslValue"]['saveTime'] if ssl['CommonSslSave']["SslValue"].get('saveTime') else {"timestamp":"0x00000176a00b4d80"}
-#         }
-
-#         ssl['CommonSslSave']["SslValue"]["saveSlotsTransaction"].append(entry)
-
-
-#     with open(sslfp, 'w+') as f:
-#         f.write(json.dumps(ssl))
 
 
 def unzip(d):
@@ -452,18 +389,6 @@ def get_fname_from_slotn(n):
     return f"CompleteSave{idx}.dat"
 
 
-def remove_empty_saves(path):
-    return
-    files = [
-        (os.path.join(path, f), f)
-        for f in os.listdir(path)
-        if os.path.isfile(os.path.join(path, f)) and "CompleteSave" in f
-    ]
-    for f in files:
-        if not save_ppd(*f):
-            os.remove(f[0])
-
-
 def load_save(mirror=False):
     warn()
     os.system("cls")
@@ -494,8 +419,6 @@ def load_save(mirror=False):
     if not local_dir:
         return
     print(green("Using local save profile " + local_dir[0]))
-
-    remove_empty_saves(local_dir[0])
 
     print(yellow(f"\n[CHOOSING LOCAL SAVE FILE] - {local_dir[1]}"))
 
@@ -764,8 +687,6 @@ def clone_save():
     if not local_dir:
         return
 
-    remove_empty_saves(local_dir[0])
-
     print(yellow(f"\n[CHOOSING LOCAL SAVE FILE] - {local_dir[1]}"))
     local_input_save_path, local_input_save_fname = get_input_completesave(
         local_dir[0],
@@ -816,8 +737,6 @@ def export():
     print(green("Using local save profile " + local_dir[0]))
     if not local_dir:
         return
-
-    remove_empty_saves(local_dir[0])
 
     print(yellow(f"\n[CHOOSING LOCAL SAVE FILE] - {local_dir[1]}"))
     local_input_save_path, local_input_save_fname = get_input_completesave(
@@ -977,7 +896,7 @@ def backup():
     # load backup file
     local_dir = get_local_save_path()
 
-    backup_dirs_path = os.path.join(local_dir, "backups")
+    backup_dirs_path = os.path.join(os.path.split(local_dir)[0], "backups")
     if not os.path.isdir(backup_dirs_path):
         os.makedirs(backup_dirs_path)
 
@@ -991,8 +910,6 @@ def backup():
 
     input(f"\nApply backup {cyan(backup_dir_name)}? (Press Enter)")
     copy_backup_files(backup_dir_path, save_dir_path)
-
-    remove_empty_saves(save_dir_path)
 
 
 async def download_attachment(attachment, clear_saves):
@@ -1132,22 +1049,11 @@ def fix_saves():
         with open(fp, "r") as f:
             text = f.read()
             print(f"{fp} readed.")
-        if text[-1] != '\0':
+        if text[-1] != "\0":
             with open(fp, "a") as f:
-                f.write('\0')
+                f.write("\0")
                 print(f"Null sign to {fp} added.")
 
-def set_colors():
-    toggle_colorize(CONFIG["colors"])
-
-
-
-
-
-def tog_colors():
-    CONFIG["colors"] = not CONFIG["colors"]
-    toggle_colorize(CONFIG["colors"])
-    save_config()
 
 
 if __name__ == "__main__":
